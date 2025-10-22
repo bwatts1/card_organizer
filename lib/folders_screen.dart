@@ -13,16 +13,16 @@ class FolderModel {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'name': name,
+      'folder_name': name,
       'created_at': createdAt.toIso8601String(),
     };
   }
 
   factory FolderModel.fromMap(Map<String, dynamic> m) {
     return FolderModel(
-      id: m['id'] as int?,
-      name: m['name'] as String,
-      createdAt: DateTime.parse(m['created_at'] as String),
+      id: m['folder_id'] as int?,
+      name: m['folder_name'] as String,
+      createdAt: DateTime.tryParse(m['created_at'] ?? '') ?? DateTime.now(),
     );
   }
 }
@@ -37,6 +37,7 @@ class FoldersScreen extends StatefulWidget {
 class _FoldersScreenState extends State<FoldersScreen> {
   final dbHelper = DatabaseHelper.instance;
   List<FolderModel> folders = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -45,28 +46,38 @@ class _FoldersScreenState extends State<FoldersScreen> {
   }
 
   Future<void> _loadFolders() async {
+    setState(() => _isLoading = true);
+
     final data = await dbHelper.queryAllFolders();
-    setState(() {
-      folders = data.map((m) => FolderModel.fromMap(m)).toList();
-    });
+    folders = data.map((m) => FolderModel.fromMap(m)).toList();
 
     if (folders.isEmpty) {
       await _createDefaultFolders();
-      _loadFolders();
+      final refreshedData = await dbHelper.queryAllFolders();
+      folders = refreshedData.map((m) => FolderModel.fromMap(m)).toList();
     }
+
+    setState(() => _isLoading = false);
   }
 
   Future<void> _createDefaultFolders() async {
-    final defaultFolders = ['Hearts', 'Spades', 'Diamonds', 'Clubs'];
-    for (final name in defaultFolders) {
-      await dbHelper.insertFolder({
+    final defaultNames = ['Hearts', 'Spades', 'Diamonds', 'Clubs'];
+    for (final name in defaultNames) {
+      final id = await dbHelper.insertFolder({
         'folder_name': name,
         'created_at': DateTime.now().toIso8601String(),
       });
+      folders.add(FolderModel(id: id, name: name));
+      print("Created folder '$name' with ID $id"); // Optional log
     }
   }
 
   void _openFolder(FolderModel folder) {
+    if (folder.id == null) {
+      print("Error: Folder ID is missing!");
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -82,7 +93,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
         title: const Text("Card Organizer - Folders"),
         centerTitle: true,
       ),
-      body: folders.isEmpty
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
               itemCount: folders.length,

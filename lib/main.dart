@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/folders_screen.dart';
+import 'folders_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

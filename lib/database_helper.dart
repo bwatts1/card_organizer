@@ -18,7 +18,7 @@ class DatabaseHelper {
   static const columnFolderId = 'folder_id';
   static const columnFolderName = 'folder_name';
 
-  static const columnCardId = 'card_id';
+  static const columnCardId = 'id';
   static const columnCardFront = 'front_text';
   static const columnCardBack = 'back_text';
   static const columnCardFolderId = 'folder_id'; 
@@ -53,11 +53,12 @@ class DatabaseHelper {
 
   await db.execute('''
     CREATE TABLE $cardTable (
-      $columnCardId INTEGER PRIMARY KEY AUTOINCREMENT,
-      $columnCardFront TEXT NOT NULL,
-      $columnCardBack TEXT NOT NULL,
-      $columnCardFolderId INTEGER NOT NULL,
-      FOREIGN KEY ($columnCardFolderId) REFERENCES $folderTable ($columnFolderId) ON DELETE CASCADE
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      suit TEXT NOT NULL,
+      image_url TEXT NOT NULL,
+      folder_id INTEGER,
+      FOREIGN KEY (folder_id) REFERENCES $folderTable ($columnFolderId) ON DELETE CASCADE
     )
   ''');
 }
