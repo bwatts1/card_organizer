@@ -26,3 +26,79 @@ class FolderModel {
     );
   }
 }
+
+class FoldersScreen extends StatefulWidget {
+  const FoldersScreen({Key? key}) : super(key: key);
+
+  @override
+  State<FoldersScreen> createState() => _FoldersScreenState();
+}
+
+class _FoldersScreenState extends State<FoldersScreen> {
+  final dbHelper = DatabaseHelper.instance;
+  List<FolderModel> folders = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFolders();
+  }
+
+  Future<void> _loadFolders() async {
+    final data = await dbHelper.queryAllFolders();
+    setState(() {
+      folders = data.map((m) => FolderModel.fromMap(m)).toList();
+    });
+
+    if (folders.isEmpty) {
+      await _createDefaultFolders();
+      _loadFolders();
+    }
+  }
+
+  Future<void> _createDefaultFolders() async {
+    final defaultFolders = ['Hearts', 'Spades', 'Diamonds', 'Clubs'];
+    for (final name in defaultFolders) {
+      await dbHelper.insertFolder({
+        'folder_name': name,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    }
+  }
+
+  void _openFolder(FolderModel folder) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CardsScreen(folder: folder),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Card Organizer - Folders"),
+        centerTitle: true,
+      ),
+      body: folders.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: folders.length,
+              itemBuilder: (context, index) {
+                final folder = folders[index];
+                return ListTile(
+                  leading: const Icon(Icons.folder, color: Colors.blueAccent),
+                  title: Text(folder.name),
+                  subtitle: Text(
+                    "Created: ${folder.createdAt.toLocal().toString().split('.')[0]}",
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () => _openFolder(folder),
+                );
+              },
+            ),
+    );
+  }
+}
